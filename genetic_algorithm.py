@@ -68,18 +68,40 @@ def calculate_priority_penalty(path) -> float:
 
     return priority_penalty
 
+def calculate_capacity_penalty(
+    path,
+    vehicle_capacity: float,
+    penalty_weight: float = 1000.0
+) -> float:
+    total_demand = sum(delivery.demand for delivery in path)
+
+    excess_load = max(0.0, total_demand - vehicle_capacity)
+
+    return excess_load * penalty_weight
 
 def calculate_hospital_fitness(
     path,
     distance_weight: float = 1.0,
     priority_weight: float = 1.0,
+    vehicle_capacity: float | None = None,
+    capacity_penalty_weight: float = 1000.0,
 ) -> float:
     total_distance = calculate_fitness(path)
     priority_penalty = calculate_priority_penalty(path)
 
+    capacity_penalty = 0.0
+
+    if vehicle_capacity is not None:
+        capacity_penalty = calculate_capacity_penalty(
+            path,
+            vehicle_capacity,
+            capacity_penalty_weight,
+        )
+
     return (
         distance_weight * total_distance
         + priority_weight * priority_penalty
+        + capacity_penalty
     )
 
 

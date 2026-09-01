@@ -17,6 +17,11 @@ import numpy as np
 import pygame
 from benchmark_att48 import *
 from models import Delivery
+from vehicle import Vehicle
+from routing import (
+    calculate_fleet_fitness,
+    split_deliveries_by_capacity,
+)
 
 # Define constant values
 # pygame
@@ -36,6 +41,16 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+ROUTE_COLORS = [
+    (0, 102, 255),    # Vehicle 1 - blue
+    (0, 180, 0),      # Vehicle 2 - green
+    (255, 140, 0),    # Vehicle 3 - orange
+    (180, 0, 255),    # Vehicle 4 - purple
+    (0, 200, 200),    # Vehicle 5 - cyan
+    (255, 0, 150),    # Vehicle 6 - pink
+    (150, 75, 0),     # Vehicle 7 - brown
+    (80, 80, 80),     # Vehicle 8 - gray
+]
 
 
 # Initialize problem
@@ -62,11 +77,14 @@ deliveries = [
         x=int(point[0] * scale_x + PLOT_X_OFFSET),
         y=int(point[1] * scale_y),
         priority=(index % 3) + 1,
-        demand=0.0,
+        demand=float((index % 5) + 1) * 10.0,
     )
     for index, point in enumerate(att_cities_locations)
 ]
-
+vehicles = [
+    Vehicle(f"Vehicle {index + 1}", capacity=250.0, autonomy=1000.0)
+    for index in range(8)
+]
 target_solution = [deliveries[i - 1] for i in att_48_cities_order]
 fitness_target_solution = calculate_fitness(target_solution)
 print(f"Best Solution: {fitness_target_solution}")
@@ -103,15 +121,22 @@ while running:
     screen.fill(WHITE)
 
     population_fitness = [
-        calculate_hospital_fitness(individual)
+        calculate_fleet_fitness(individual, vehicles)
         for individual in population
     ]
 
     population, population_fitness = sort_population(
         population,  population_fitness)
 
-    best_fitness = calculate_hospital_fitness(population[0])
+    best_fitness = calculate_fleet_fitness(
+        population[0],
+        vehicles,
+    )
     best_solution = population[0]
+    best_routes = split_deliveries_by_capacity(
+        best_solution,
+        vehicles,
+    )
 
     best_fitness_values.append(best_fitness)
     best_solutions.append(best_solution)
@@ -120,8 +145,15 @@ while running:
               best_fitness_values, y_label="Hospital Fitness")
 
     draw_cities(screen, deliveries, RED, NODE_RADIUS)
-    draw_paths(screen, best_solution, BLUE, width=3)
-    draw_paths(screen, population[1], rgb_color=(128, 128, 128), width=1)
+    for vehicle_index, route in enumerate(best_routes):
+        route_color = ROUTE_COLORS[vehicle_index % len(ROUTE_COLORS)]
+
+        draw_paths(
+            screen,
+            route,
+            route_color,
+            width=3,
+        )
 
     print(f"Generation {generation}: Best fitness = {round(best_fitness, 2)}")
 

@@ -2,6 +2,7 @@ from genetic_algorithm import (
     calculate_distance,
     calculate_fitness,
     calculate_hospital_fitness,
+    calculate_capacity_penalty
 )
 from models import Delivery
 
@@ -103,3 +104,32 @@ def test_hospital_fitness_prefers_critical_delivery_earlier():
     early_fitness = calculate_hospital_fitness(critical_early)
 
     assert early_fitness < late_fitness
+
+def test_capacity_penalty_is_zero_when_within_capacity():
+    path = [
+        Delivery("Base", 0.0, 0.0, 1, 0.0),
+        Delivery("Hospital A", 10.0, 0.0, 1, 10.0),
+        Delivery("Hospital B", 20.0, 0.0, 2, 15.0),
+    ]
+
+    penalty = calculate_capacity_penalty(
+        path,
+        vehicle_capacity=30.0,
+    )
+
+    assert penalty == 0.0
+
+def test_capacity_penalty_increases_when_capacity_is_exceeded():
+    path = [
+        Delivery("Base", 0.0, 0.0, 1, 0.0),
+        Delivery("Hospital A", 10.0, 0.0, 1, 20.0),
+        Delivery("Hospital B", 20.0, 0.0, 2, 20.0),
+    ]
+
+    penalty = calculate_capacity_penalty(
+        path,
+        vehicle_capacity=30.0,
+        penalty_weight=1000.0,
+    )
+
+    assert penalty == 10000.0
