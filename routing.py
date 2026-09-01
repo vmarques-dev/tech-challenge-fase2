@@ -1,6 +1,10 @@
 from models import Delivery
 from vehicle import Vehicle
-from genetic_algorithm import calculate_hospital_fitness
+from genetic_algorithm import (
+    calculate_fitness,
+    calculate_hospital_fitness,
+    calculate_priority_penalty,
+)
 
 
 def split_deliveries_by_capacity(
@@ -93,3 +97,28 @@ def calculate_autonomy_penalty(
     excess_distance = max(0.0, route_distance - vehicle.autonomy)
 
     return excess_distance * penalty_weight
+
+def calculate_fleet_metrics(
+    deliveries: list[Delivery],
+    vehicles: list[Vehicle],
+) -> dict:
+    routes = split_deliveries_by_capacity(deliveries, vehicles)
+
+    total_distance = 0.0
+    total_priority_penalty = 0.0
+    total_autonomy_penalty = 0.0
+
+    for route, vehicle in zip(routes, vehicles):
+        total_distance += calculate_fitness(route)
+        total_priority_penalty += calculate_priority_penalty(route)
+        total_autonomy_penalty += calculate_autonomy_penalty(
+            route,
+            vehicle,
+        )
+
+    return {
+        "distance": total_distance,
+        "priority_penalty": total_priority_penalty,
+        "autonomy_penalty": total_autonomy_penalty,
+        "routes": len(routes),
+    }

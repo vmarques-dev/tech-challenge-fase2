@@ -22,6 +22,8 @@ from routing import (
     calculate_fleet_fitness,
     split_deliveries_by_capacity,
 )
+from nearest_neighbor import nearest_neighbor_route
+from routing import calculate_fleet_metrics
 
 # Define constant values
 # pygame
@@ -85,6 +87,12 @@ vehicles = [
     Vehicle(f"Vehicle {index + 1}", capacity=250.0, autonomy=900.0)
     for index in range(8)
 ]
+nearest_neighbor_solution = nearest_neighbor_route(deliveries)
+
+nearest_neighbor_fitness = calculate_fleet_fitness(
+    nearest_neighbor_solution,
+    vehicles,
+)
 target_solution = [deliveries[i - 1] for i in att_48_cities_order]
 fitness_target_solution = calculate_fitness(target_solution)
 print(f"Best Solution: {fitness_target_solution}")
@@ -101,7 +109,12 @@ generation_counter = itertools.count(start=1)  # Start the counter at 1
 
 # Create Initial Population
 # TODO:- use some heuristic like Nearest Neighbour our Convex Hull to initialize
-population = generate_random_population(deliveries, POPULATION_SIZE)
+population = generate_random_population(
+    deliveries,
+    POPULATION_SIZE,
+)
+
+population[0] = nearest_neighbor_solution.copy()
 best_fitness_values = []
 best_solutions = []
 
@@ -182,6 +195,57 @@ while running:
 
 
 # TODO: save the best individual in a file if it is better than the one saved.
+
+ga_fitness = calculate_fleet_fitness(
+    best_solution,
+    vehicles,
+)
+
+improvement = (
+    (nearest_neighbor_fitness - ga_fitness)
+    / nearest_neighbor_fitness
+    * 100
+)
+
+print("\n--- Routing Comparison ---")
+print(f"Nearest Neighbor fitness: {nearest_neighbor_fitness:.2f}")
+print(f"Genetic Algorithm fitness: {ga_fitness:.2f}")
+fitness_difference = (
+    (ga_fitness - nearest_neighbor_fitness)
+    / nearest_neighbor_fitness
+    * 100
+)
+print(
+    f"GA fitness difference vs. Nearest Neighbor: "
+    f"{fitness_difference:.2f}%"
+)
+print("--------------------------")
+
+nn_metrics = calculate_fleet_metrics(
+    nearest_neighbor_solution,
+    vehicles,
+)
+
+ga_metrics = calculate_fleet_metrics(
+    best_solution,
+    vehicles,
+)
+
+print("\n--- Detailed Routing Metrics ---")
+print(
+    f"Nearest Neighbor: "
+    f"distance={nn_metrics['distance']:.2f}, "
+    f"priority={nn_metrics['priority_penalty']:.2f}, "
+    f"autonomy={nn_metrics['autonomy_penalty']:.2f}, "
+    f"routes={nn_metrics['routes']}"
+)
+print(
+    f"Genetic Algorithm: "
+    f"distance={ga_metrics['distance']:.2f}, "
+    f"priority={ga_metrics['priority_penalty']:.2f}, "
+    f"autonomy={ga_metrics['autonomy_penalty']:.2f}, "
+    f"routes={ga_metrics['routes']}"
+)
 
 # exit software
 pygame.quit()
