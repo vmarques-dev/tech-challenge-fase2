@@ -1,4 +1,5 @@
 from genetic_algorithm import generate_random_population, sort_population
+from models import Delivery
 
 def test_generate_random_population_preserves_all_cities():
     cities = ["A", "B", "C", "D", "E"]
@@ -28,3 +29,18 @@ def test_sort_population_orders_by_fitness():
         ["B", "A", "C"],
         ["A", "B", "C"],
     ]
+
+def test_generate_random_population_with_deliveries():
+    deliveries = [
+        Delivery("Hospital A", 0.0, 0.0, 1, 10.0),
+        Delivery("Hospital B", 3.0, 0.0, 2, 5.0),
+        Delivery("Hospital C", 3.0, 4.0, 3, 8.0),
+    ]
+
+    population = generate_random_population(deliveries, population_size=20)
+
+    assert len(population) == 20
+
+    for individual in population:
+        assert len(individual) == len(deliveries)
+        assert set(individual) == set(deliveries)

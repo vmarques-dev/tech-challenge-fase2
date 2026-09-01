@@ -6,11 +6,11 @@ Created on Fri Dec 22 16:03:11 2023
 """
 import pylab
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import matplotlib
 import pygame
 from typing import List, Tuple
+from models import Delivery
 
 matplotlib.use("Agg")
 
@@ -42,37 +42,37 @@ def draw_plot(screen: pygame.Surface, x: list, y: list, x_label: str = 'Generati
     screen.blit(surf, (0, 0))
 
     plt.close(fig)
+
+def get_coordinates(location):
+    if isinstance(location, Delivery):
+        return int(location.x), int(location.y)
+
+    return location
     
-def draw_cities(screen: pygame.Surface, cities_locations: List[Tuple[int, int]], rgb_color: Tuple[int, int, int], node_radius: int) -> None:
+def draw_cities(screen: pygame.Surface, cities_locations, rgb_color: Tuple[int, int, int], node_radius: int) -> None:
     """
-    Draws circles representing cities on the given Pygame screen.
-
-    Parameters:
-    - screen (pygame.Surface): The Pygame surface on which to draw the cities.
-    - cities_locations (List[Tuple[int, int]]): List of (x, y) coordinates representing the locations of cities.
-    - rgb_color (Tuple[int, int, int]): Tuple of three integers (R, G, B) representing the color of the city circles.
-    - node_radius (int): The radius of the city circles.
-
-    Returns:
-    None
+    Draws circles representing cities or hospital deliveries
+    on the given Pygame screen.
     """
     for city_location in cities_locations:
-        pygame.draw.circle(screen, rgb_color, city_location, node_radius)
+        coordinates = get_coordinates(city_location)
+        pygame.draw.circle(screen, rgb_color, coordinates, node_radius)
 
 
 
-def draw_paths(screen: pygame.Surface, path: List[Tuple[int, int]], rgb_color: Tuple[int, int, int], width: int = 1):
+def draw_paths(screen: pygame.Surface, path, rgb_color: Tuple[int, int, int], width: int = 1):
     """
-    Draw a path on a Pygame screen.
-
-    Parameters:
-    - screen (pygame.Surface): The Pygame surface to draw the path on.
-    - path (List[Tuple[int, int]]): List of tuples representing the coordinates of the path.
-    - rgb_color (Tuple[int, int, int]): RGB values for the color of the path.
-    - width (int): Width of the path lines (default is 1).
+    Draw a route containing coordinate tuples or Delivery objects.
     """
-    pygame.draw.lines(screen, rgb_color, True, path, width=width)
+    coordinates = [get_coordinates(location) for location in path]
 
+    pygame.draw.lines(
+        screen,
+        rgb_color,
+        True,
+        coordinates,
+        width=width
+    )
 
 def draw_text(screen: pygame.Surface, text: str, color: pygame.Color) -> None:
     """

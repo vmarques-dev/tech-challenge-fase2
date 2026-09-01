@@ -4,6 +4,7 @@ import random
 import math
 import copy 
 from typing import List, Tuple
+from models import Delivery
 
 default_problems = {
 5: [(733, 251), (706, 87), (546, 97), (562, 49), (576, 253)],
@@ -27,18 +28,15 @@ def generate_random_population(cities_location: List[Tuple[float, float]], popul
     return [random.sample(cities_location, len(cities_location)) for _ in range(population_size)]
 
 
-def calculate_distance(point1: Tuple[float, float], point2: Tuple[float, float]) -> float:
-    """
-    Calculate the Euclidean distance between two points.
+def calculate_distance(point1, point2) -> float:
+    if isinstance(point1, Delivery) and isinstance(point2, Delivery):
+        x1, y1 = point1.x, point1.y
+        x2, y2 = point2.x, point2.y
+    else:
+        x1, y1 = point1
+        x2, y2 = point2
 
-    Parameters:
-    - point1 (Tuple[float, float]): The coordinates of the first point.
-    - point2 (Tuple[float, float]): The coordinates of the second point.
-
-    Returns:
-    float: The Euclidean distance between the two points.
-    """
-    return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 
 def calculate_fitness(path: List[Tuple[float, float]]) -> float:

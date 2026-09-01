@@ -8,7 +8,7 @@ import sys
 import numpy as np
 import pygame
 from benchmark_att48 import *
-
+from models import Delivery
 
 # Define constant values
 # pygame
@@ -48,9 +48,18 @@ max_x = max(point[0] for point in att_cities_locations)
 max_y = max(point[1] for point in att_cities_locations)
 scale_x = (WIDTH - PLOT_X_OFFSET - NODE_RADIUS) / max_x
 scale_y = HEIGHT / max_y
-cities_locations = [(int(point[0] * scale_x + PLOT_X_OFFSET),
-                     int(point[1] * scale_y)) for point in att_cities_locations]
-target_solution = [cities_locations[i-1] for i in att_48_cities_order]
+deliveries = [
+    Delivery(
+        name=f"Hospital {index + 1}",
+        x=int(point[0] * scale_x + PLOT_X_OFFSET),
+        y=int(point[1] * scale_y),
+        priority=1,
+        demand=0.0,
+    )
+    for index, point in enumerate(att_cities_locations)
+]
+
+target_solution = [deliveries[i - 1] for i in att_48_cities_order]
 fitness_target_solution = calculate_fitness(target_solution)
 print(f"Best Solution: {fitness_target_solution}")
 # ----- Using att48 benchmark
@@ -66,7 +75,7 @@ generation_counter = itertools.count(start=1)  # Start the counter at 1
 
 # Create Initial Population
 # TODO:- use some heuristic like Nearest Neighbour our Convex Hull to initialize
-population = generate_random_population(cities_locations, POPULATION_SIZE)
+population = generate_random_population(deliveries, POPULATION_SIZE)
 best_fitness_values = []
 best_solutions = []
 
@@ -100,7 +109,7 @@ while running:
     draw_plot(screen, list(range(len(best_fitness_values))),
               best_fitness_values, y_label="Fitness - Distance (pxls)")
 
-    draw_cities(screen, cities_locations, RED, NODE_RADIUS)
+    draw_cities(screen, deliveries, RED, NODE_RADIUS)
     draw_paths(screen, best_solution, BLUE, width=3)
     draw_paths(screen, population[1], rgb_color=(128, 128, 128), width=1)
 

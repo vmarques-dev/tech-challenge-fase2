@@ -1,4 +1,5 @@
 from genetic_algorithm import mutate
+from models import Delivery
 
 def test_mutation_preserves_all_cities():
     solution = ["A", "B", "C", "D", "E"]
@@ -29,3 +30,15 @@ def test_mutation_swaps_adjacent_cities():
 
     assert len(changed_positions) == 2
     assert changed_positions[1] - changed_positions[0] == 1
+
+def test_mutation_with_deliveries():
+    solution = [
+        Delivery("Hospital A", 0.0, 0.0, 1, 10.0),
+        Delivery("Hospital B", 3.0, 0.0, 2, 5.0),
+        Delivery("Hospital C", 3.0, 4.0, 3, 8.0),
+    ]
+
+    mutated = mutate(solution, mutation_probability=1.0)
+
+    assert len(mutated) == len(solution)
+    assert set(mutated) == set(solution)
