@@ -1,7 +1,8 @@
 from models import Delivery
 from routing import (
     split_deliveries_by_capacity,
-    calculate_fleet_fitness
+    calculate_fleet_fitness,
+    calculate_autonomy_penalty
 )
 from vehicle import Vehicle
 
@@ -129,3 +130,75 @@ def test_fleet_fitness_supports_multiple_vehicle_routes():
     )
 
     assert fitness > 0.0
+
+def test_autonomy_penalty_is_zero_when_route_is_within_limit():
+    route = [
+        Delivery("Base", 0.0, 0.0, 1, 0.0),
+        Delivery("Hospital A", 3.0, 0.0, 1, 10.0),
+        Delivery("Hospital B", 3.0, 4.0, 2, 10.0),
+    ]
+
+    vehicle = Vehicle(
+        "Vehicle 1",
+        capacity=100.0,
+        autonomy=20.0,
+    )
+
+    penalty = calculate_autonomy_penalty(route, vehicle)
+
+    assert penalty == 0.0
+
+def test_autonomy_penalty_increases_when_route_exceeds_limit():
+    route = [
+        Delivery("Base", 0.0, 0.0, 1, 0.0),
+        Delivery("Hospital A", 3.0, 0.0, 1, 10.0),
+        Delivery("Hospital B", 3.0, 4.0, 2, 10.0),
+    ]
+
+    vehicle = Vehicle(
+        "Vehicle 1",
+        capacity=100.0,
+        autonomy=10.0,
+    )
+
+    penalty = calculate_autonomy_penalty(
+        route,
+        vehicle,
+        penalty_weight=1000.0,
+    )
+
+    assert penalty == 2000.0
+
+def test_fleet_fitness_penalizes_insufficient_autonomy():
+    deliveries = [
+        Delivery("Base", 0.0, 0.0, 1, 0.0),
+        Delivery("Hospital A", 3.0, 4.0, 2, 10.0),
+    ]
+
+    vehicle_with_enough_autonomy = [
+        Vehicle(
+            "Vehicle 1",
+            capacity=100.0,
+            autonomy=20.0,
+        )
+    ]
+
+    vehicle_with_low_autonomy = [
+        Vehicle(
+            "Vehicle 1",
+            capacity=100.0,
+            autonomy=5.0,
+        )
+    ]
+
+    valid_fitness = calculate_fleet_fitness(
+        deliveries,
+        vehicle_with_enough_autonomy,
+    )
+
+    penalized_fitness = calculate_fleet_fitness(
+        deliveries,
+        vehicle_with_low_autonomy,
+    )
+
+    assert penalized_fitness > valid_fitness

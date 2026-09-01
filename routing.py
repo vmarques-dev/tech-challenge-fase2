@@ -61,16 +61,35 @@ def calculate_fleet_fitness(
     vehicles: list[Vehicle],
     distance_weight: float = 1.0,
     priority_weight: float = 1.0,
+    autonomy_penalty_weight: float = 1000.0,
 ) -> float:
     routes = split_deliveries_by_capacity(deliveries, vehicles)
 
     total_fitness = 0.0
 
-    for route in routes:
+    for route, vehicle in zip(routes, vehicles):
         total_fitness += calculate_hospital_fitness(
             route,
             distance_weight=distance_weight,
             priority_weight=priority_weight,
         )
 
+        total_fitness += calculate_autonomy_penalty(
+            route,
+            vehicle,
+            penalty_weight=autonomy_penalty_weight,
+        )
+
     return total_fitness
+
+def calculate_autonomy_penalty(
+    route: list[Delivery],
+    vehicle: Vehicle,
+    penalty_weight: float = 1000.0,
+) -> float:
+    from genetic_algorithm import calculate_fitness
+
+    route_distance = calculate_fitness(route)
+    excess_distance = max(0.0, route_distance - vehicle.autonomy)
+
+    return excess_distance * penalty_weight

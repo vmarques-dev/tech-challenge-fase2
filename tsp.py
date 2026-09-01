@@ -82,7 +82,7 @@ deliveries = [
     for index, point in enumerate(att_cities_locations)
 ]
 vehicles = [
-    Vehicle(f"Vehicle {index + 1}", capacity=250.0, autonomy=1000.0)
+    Vehicle(f"Vehicle {index + 1}", capacity=250.0, autonomy=900.0)
     for index in range(8)
 ]
 target_solution = [deliveries[i - 1] for i in att_48_cities_order]
@@ -135,7 +135,7 @@ while running:
     best_solution = population[0]
     best_routes = split_deliveries_by_capacity(
         best_solution,
-        vehicles,
+        vehicles
     )
 
     best_fitness_values.append(best_fitness)
