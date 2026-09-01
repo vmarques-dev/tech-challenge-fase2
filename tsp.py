@@ -42,7 +42,7 @@ BLUE = (0, 0, 255)
 
 
 # Using att48 benchmark
-WIDTH, HEIGHT = 1500, 800
+WIDTH, HEIGHT = 750, 400
 att_cities_locations = np.array(att_48_cities_locations)
 max_x = max(point[0] for point in att_cities_locations)
 max_y = max(point[1] for point in att_cities_locations)
