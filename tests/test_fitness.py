@@ -1,4 +1,8 @@
-from genetic_algorithm import calculate_distance, calculate_fitness
+from genetic_algorithm import (
+    calculate_distance,
+    calculate_fitness,
+    calculate_hospital_fitness,
+)
 from models import Delivery
 
 def test_calculate_distance():
@@ -77,3 +81,25 @@ def test_calculate_fitness_with_deliveries():
     fitness = calculate_fitness(path)
 
     assert fitness == 14.0
+
+def test_hospital_fitness_prefers_critical_delivery_earlier():
+    start = Delivery("Start", 0.0, 0.0, 1, 0.0)
+    normal = Delivery("Normal Hospital", 10.0, 0.0, 1, 5.0)
+    critical = Delivery("Critical Hospital", 0.0, 10.0, 3, 5.0)
+
+    critical_late = [
+        start,
+        normal,
+        critical,
+    ]
+
+    critical_early = [
+        start,
+        critical,
+        normal,
+    ]
+
+    late_fitness = calculate_hospital_fitness(critical_late)
+    early_fitness = calculate_hospital_fitness(critical_early)
+
+    assert early_fitness < late_fitness

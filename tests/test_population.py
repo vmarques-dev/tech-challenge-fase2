@@ -44,3 +44,20 @@ def test_generate_random_population_with_deliveries():
     for individual in population:
         assert len(individual) == len(deliveries)
         assert set(individual) == set(deliveries)
+
+def test_generate_random_population_keeps_start_fixed():
+    deliveries = [
+        Delivery("Base", 0.0, 0.0, 1, 0.0),
+        Delivery("Hospital A", 10.0, 0.0, 1, 5.0),
+        Delivery("Hospital B", 20.0, 0.0, 3, 8.0),
+        Delivery("Hospital C", 30.0, 0.0, 2, 6.0),
+    ]
+
+    population = generate_random_population(
+        deliveries,
+        population_size=50,
+    )
+
+    for individual in population:
+        assert individual[0] == deliveries[0]
+        assert set(individual) == set(deliveries)

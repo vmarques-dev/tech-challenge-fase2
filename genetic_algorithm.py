@@ -13,20 +13,20 @@ default_problems = {
 15:[(512, 317), (741, 72), (552, 50), (772, 346), (637, 12), (589, 131), (732, 165), (605, 15), (730, 38), (576, 216), (589, 381), (711, 387), (563, 228), (494, 22), (787, 288)]
 }
 
-def generate_random_population(cities_location: List[Tuple[float, float]], population_size: int) -> List[List[Tuple[float, float]]]:
-    """
-    Generate a random population of routes for a given set of cities.
+def generate_random_population(cities_location, population_size):
+    if not cities_location:
+        return []
 
-    Parameters:
-    - cities_location (List[Tuple[float, float]]): A list of tuples representing the locations of cities,
-      where each tuple contains the latitude and longitude.
-    - population_size (int): The size of the population, i.e., the number of routes to generate.
+    start = cities_location[0]
+    remaining = cities_location[1:]
 
-    Returns:
-    List[List[Tuple[float, float]]]: A list of routes, where each route is represented as a list of city locations.
-    """
-    return [random.sample(cities_location, len(cities_location)) for _ in range(population_size)]
+    population = []
 
+    for _ in range(population_size):
+        individual = [start] + random.sample(remaining, len(remaining))
+        population.append(individual)
+
+    return population
 
 def calculate_distance(point1, point2) -> float:
     if isinstance(point1, Delivery) and isinstance(point2, Delivery):
@@ -57,101 +57,81 @@ def calculate_fitness(path: List[Tuple[float, float]]) -> float:
 
     return distance
 
+def calculate_priority_penalty(path) -> float:
+    cumulative_distance = 0.0
+    priority_penalty = 0.0
+    n = len(path)
 
-def order_crossover(parent1: List[Tuple[float, float]], parent2: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """
-    Perform order crossover (OX) between two parent sequences to create a child sequence.
+    for i in range(n - 1):
+        cumulative_distance += calculate_distance(path[i], path[i + 1])
+        priority_penalty += cumulative_distance * path[i + 1].priority
 
-    Parameters:
-    - parent1 (List[Tuple[float, float]]): The first parent sequence.
-    - parent2 (List[Tuple[float, float]]): The second parent sequence.
+    return priority_penalty
 
-    Returns:
-    List[Tuple[float, float]]: The child sequence resulting from the order crossover.
-    """
-    length = len(parent1)
 
-    # Choose two random indices for the crossover
+def calculate_hospital_fitness(
+    path,
+    distance_weight: float = 1.0,
+    priority_weight: float = 1.0,
+) -> float:
+    total_distance = calculate_fitness(path)
+    priority_penalty = calculate_priority_penalty(path)
+
+    return (
+        distance_weight * total_distance
+        + priority_weight * priority_penalty
+    )
+
+
+def order_crossover(parent1, parent2):
+    if len(parent1) <= 1:
+        return parent1.copy()
+
+    if parent1[0] != parent2[0]:
+        raise ValueError("Parents must have the same fixed starting point.")
+
+    start_node = parent1[0]
+
+    route1 = parent1[1:]
+    route2 = parent2[1:]
+
+    length = len(route1)
+
     start_index = random.randint(0, length - 1)
     end_index = random.randint(start_index + 1, length)
 
-    # Initialize the child with a copy of the substring from parent1
-    child = parent1[start_index:end_index]
+    child_route = route1[start_index:end_index]
 
-    # Fill in the remaining positions with genes from parent2
-    remaining_positions = [i for i in range(length) if i < start_index or i >= end_index]
-    remaining_genes = [gene for gene in parent2 if gene not in child]
+    remaining_positions = [
+        i for i in range(length)
+        if i < start_index or i >= end_index
+    ]
+
+    remaining_genes = [
+        gene for gene in route2
+        if gene not in child_route
+    ]
 
     for position, gene in zip(remaining_positions, remaining_genes):
-        child.insert(position, gene)
+        child_route.insert(position, gene)
 
-    return child
+    return [start_node] + child_route
 
-### demonstration: crossover test code
-# Example usage:
-# parent1 = [(1, 1), (2, 2), (3, 3), (4,4), (5,5), (6, 6)]
-# parent2 = [(6, 6), (5, 5), (4, 4), (3, 3),  (2, 2), (1, 1)]
-
-# # parent1 = [1, 2, 3, 4, 5, 6]
-# # parent2 = [6, 5, 4, 3, 2, 1]
-
-
-# child = order_crossover(parent1, parent2)
-# print("Parent 1:", [0, 1, 2, 3, 4, 5, 6, 7, 8])
-# print("Parent 1:", parent1)
-# print("Parent 2:", parent2)
-# print("Child   :", child)
-
-
-# # Example usage:
-# population = generate_random_population(5, 10)
-
-# print(calculate_fitness(population[0]))
-
-
-# population = [(random.randint(0, 100), random.randint(0, 100))
-#           for _ in range(3)]
-
-
-
-# TODO: implement a mutation_intensity and invert pieces of code instead of just swamping two. 
-def mutate(solution:  List[Tuple[float, float]], mutation_probability: float) ->  List[Tuple[float, float]]:
-    """
-    Mutate a solution by inverting a segment of the sequence with a given mutation probability.
-
-    Parameters:
-    - solution (List[int]): The solution sequence to be mutated.
-    - mutation_probability (float): The probability of mutation for each individual in the solution.
-
-    Returns:
-    List[int]: The mutated solution sequence.
-    """
+def mutate(solution, mutation_probability):
     mutated_solution = copy.deepcopy(solution)
 
-    # Check if mutation should occur    
     if random.random() < mutation_probability:
-        
-        # Ensure there are at least two cities to perform a swap
-        if len(solution) < 2:
-            return solution
-    
-        # Select a random index (excluding the last index) for swapping
-        index = random.randint(0, len(solution) - 2)
-        
-        # Swap the cities at the selected index and the next index
-        mutated_solution[index], mutated_solution[index + 1] = solution[index + 1], solution[index]   
-        
+        if len(solution) <= 2:
+            return mutated_solution
+
+        index = random.randint(1, len(solution) - 2)
+
+        mutated_solution[index], mutated_solution[index + 1] = (
+            mutated_solution[index + 1],
+            mutated_solution[index],
+        )
+
     return mutated_solution
-
-### Demonstration: mutation test code    
-# # Example usage:
-# original_solution = [(1, 1), (2, 2), (3, 3), (4, 4)]
-# mutation_probability = 1
-
-# mutated_solution = mutate(original_solution, mutation_probability)
-# print("Original Solution:", original_solution)
-# print("Mutated Solution:", mutated_solution)
-
 
 def sort_population(population: List[List[Tuple[float, float]]], fitness: List[float]) -> Tuple[List[List[Tuple[float, float]]], List[float]]:
     """

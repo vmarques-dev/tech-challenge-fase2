@@ -42,3 +42,12 @@ def test_mutation_with_deliveries():
 
     assert len(mutated) == len(solution)
     assert set(mutated) == set(solution)
+
+def test_mutation_keeps_start_fixed():
+    solution = ["Base", "A", "B", "C", "D"]
+
+    for _ in range(100):
+        mutated = mutate(solution, mutation_probability=1.0)
+
+        assert mutated[0] == "Base"
+        assert set(mutated) == set(solution)

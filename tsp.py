@@ -2,7 +2,15 @@ import pygame
 from pygame.locals import *
 import random
 import itertools
-from genetic_algorithm import mutate, order_crossover, generate_random_population, calculate_fitness, sort_population, default_problems
+from genetic_algorithm import (
+    mutate,
+    order_crossover,
+    generate_random_population,
+    calculate_fitness,
+    calculate_hospital_fitness,
+    sort_population,
+    default_problems,
+)
 from draw_functions import draw_paths, draw_plot, draw_cities
 import sys
 import numpy as np
@@ -53,7 +61,7 @@ deliveries = [
         name=f"Hospital {index + 1}",
         x=int(point[0] * scale_x + PLOT_X_OFFSET),
         y=int(point[1] * scale_y),
-        priority=1,
+        priority=(index % 3) + 1,
         demand=0.0,
     )
     for index, point in enumerate(att_cities_locations)
@@ -94,20 +102,22 @@ while running:
 
     screen.fill(WHITE)
 
-    population_fitness = [calculate_fitness(
-        individual) for individual in population]
+    population_fitness = [
+        calculate_hospital_fitness(individual)
+        for individual in population
+    ]
 
     population, population_fitness = sort_population(
         population,  population_fitness)
 
-    best_fitness = calculate_fitness(population[0])
+    best_fitness = calculate_hospital_fitness(population[0])
     best_solution = population[0]
 
     best_fitness_values.append(best_fitness)
     best_solutions.append(best_solution)
 
     draw_plot(screen, list(range(len(best_fitness_values))),
-              best_fitness_values, y_label="Fitness - Distance (pxls)")
+              best_fitness_values, y_label="Hospital Fitness")
 
     draw_cities(screen, deliveries, RED, NODE_RADIUS)
     draw_paths(screen, best_solution, BLUE, width=3)
