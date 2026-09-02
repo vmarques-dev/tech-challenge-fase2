@@ -1,7 +1,5 @@
 import pygame
 from pygame.locals import *
-import random
-import itertools
 from genetic_algorithm import (
     mutate,
     order_crossover,
@@ -24,6 +22,7 @@ from routing import (
 )
 from nearest_neighbor import nearest_neighbor_route
 from routing import calculate_fleet_metrics
+from ga_runner import run_genetic_algorithm
 
 # Define constant values
 # pygame
@@ -35,7 +34,7 @@ PLOT_X_OFFSET = 450
 # GA
 N_CITIES = 15
 POPULATION_SIZE = 100
-N_GENERATIONS = None
+N_GENERATIONS = 200
 MUTATION_PROBABILITY = 0.5
 
 # Define colors
@@ -98,29 +97,36 @@ fitness_target_solution = calculate_fitness(target_solution)
 print(f"Best Solution: {fitness_target_solution}")
 # ----- Using att48 benchmark
 
+# Run Genetic Algorithm
+ga_result = run_genetic_algorithm(
+    deliveries,
+    vehicles,
+    population_size=POPULATION_SIZE,
+    generations=N_GENERATIONS,
+    mutation_probability=MUTATION_PROBABILITY,
+    seed=42,
+)
+
+best_solution = ga_result["best_solution"]
+best_fitness = ga_result["best_fitness"]
+best_fitness_values = ga_result["fitness_history"]
+
+best_routes = split_deliveries_by_capacity(
+    best_solution,
+    vehicles,
+)
+
+print(f"Genetic Algorithm best fitness: {best_fitness:.2f}")
 
 # Initialize Pygame
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("TSP Solver using Pygame")
 clock = pygame.time.Clock()
-generation_counter = itertools.count(start=1)  # Start the counter at 1
 
-
-# Create Initial Population
-# TODO:- use some heuristic like Nearest Neighbour our Convex Hull to initialize
-population = generate_random_population(
-    deliveries,
-    POPULATION_SIZE,
-)
-
-population[0] = nearest_neighbor_solution.copy()
-best_fitness_values = []
-best_solutions = []
-
-
-# Main game loop
+# Visualization loop
 running = True
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -129,37 +135,26 @@ while running:
             if event.key == pygame.K_q:
                 running = False
 
-    generation = next(generation_counter)
-
     screen.fill(WHITE)
 
-    population_fitness = [
-        calculate_fleet_fitness(individual, vehicles)
-        for individual in population
-    ]
-
-    population, population_fitness = sort_population(
-        population,  population_fitness)
-
-    best_fitness = calculate_fleet_fitness(
-        population[0],
-        vehicles,
-    )
-    best_solution = population[0]
-    best_routes = split_deliveries_by_capacity(
-        best_solution,
-        vehicles
+    draw_plot(
+        screen,
+        list(range(1, len(best_fitness_values) + 1)),
+        best_fitness_values,
+        y_label="Hospital Fitness",
     )
 
-    best_fitness_values.append(best_fitness)
-    best_solutions.append(best_solution)
+    draw_cities(
+        screen,
+        deliveries,
+        RED,
+        NODE_RADIUS,
+    )
 
-    draw_plot(screen, list(range(len(best_fitness_values))),
-              best_fitness_values, y_label="Hospital Fitness")
-
-    draw_cities(screen, deliveries, RED, NODE_RADIUS)
     for vehicle_index, route in enumerate(best_routes):
-        route_color = ROUTE_COLORS[vehicle_index % len(ROUTE_COLORS)]
+        route_color = ROUTE_COLORS[
+            vehicle_index % len(ROUTE_COLORS)
+        ]
 
         draw_paths(
             screen,
@@ -168,31 +163,8 @@ while running:
             width=3,
         )
 
-    print(f"Generation {generation}: Best fitness = {round(best_fitness, 2)}")
-
-    new_population = [population[0]]  # Keep the best individual: ELITISM
-
-    while len(new_population) < POPULATION_SIZE:
-
-        # selection
-        # simple selection based on first 10 best solutions
-        # parent1, parent2 = random.choices(population[:10], k=2)
-
-        # solution based on fitness probability
-        probability = 1 / np.array(population_fitness)
-        parent1, parent2 = random.choices(population, weights=probability, k=2)
-
-        child1 = order_crossover(parent1, parent2)
-
-        child1 = mutate(child1, MUTATION_PROBABILITY)
-
-        new_population.append(child1)
-
-    population = new_population
-
     pygame.display.flip()
     clock.tick(FPS)
-
 
 # TODO: save the best individual in a file if it is better than the one saved.
 
