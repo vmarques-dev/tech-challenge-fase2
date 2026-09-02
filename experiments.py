@@ -94,6 +94,7 @@ def main():
     print(f"Routes: {nearest_neighbor_metrics['routes']}")
 
     results = []
+    convergence_results = []
 
     for seed in SEEDS:
         print(f"\nRunning GA with seed {seed}...")
@@ -107,6 +108,18 @@ def main():
             seed=seed,
             verbose=False,
         )
+
+        for generation, fitness in enumerate(
+                result["fitness_history"],
+                start=1,
+        ):
+            convergence_results.append(
+                {
+                    "seed": seed,
+                    "generation": generation,
+                    "fitness": fitness,
+                }
+            )
 
         metrics = calculate_fleet_metrics(
             result["best_solution"],
@@ -170,6 +183,33 @@ def main():
         writer.writerows(results)
 
     print(f"\nResults saved to: {output_file}")
+
+    convergence_file = os.path.join(
+        "results",
+        "ga_convergence.csv",
+    )
+
+    with open(
+            convergence_file,
+            "w",
+            newline="",
+            encoding="utf-8",
+    ) as csv_file:
+        fieldnames = [
+            "seed",
+            "generation",
+            "fitness",
+        ]
+
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=fieldnames,
+        )
+
+        writer.writeheader()
+        writer.writerows(convergence_results)
+
+    print(f"Convergence saved to: {convergence_file}")
 
     fitness_values = [
         result["fitness"]

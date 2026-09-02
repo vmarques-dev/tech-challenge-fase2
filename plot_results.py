@@ -180,6 +180,87 @@ def plot_fitness_difference(results):
 
     print(f"Saved: {output_file}")
 
+def load_convergence_results():
+    convergence_file = os.path.join(
+        "results",
+        "ga_convergence.csv",
+    )
+
+    with open(
+        convergence_file,
+        "r",
+        encoding="utf-8",
+    ) as csv_file:
+        reader = csv.DictReader(csv_file)
+
+        return [
+            {
+                "seed": int(row["seed"]),
+                "generation": int(row["generation"]),
+                "fitness": float(row["fitness"]),
+            }
+            for row in reader
+        ]
+
+def plot_convergence(convergence_results):
+    plt.figure(figsize=(10, 6))
+
+    seeds = sorted(
+        set(
+            result["seed"]
+            for result in convergence_results
+        )
+    )
+
+    for seed in seeds:
+        seed_results = [
+            result
+            for result in convergence_results
+            if result["seed"] == seed
+        ]
+
+        generations = [
+            result["generation"]
+            for result in seed_results
+        ]
+
+        fitness_values = [
+            result["fitness"]
+            for result in seed_results
+        ]
+
+        plt.plot(
+            generations,
+            fitness_values,
+            label=f"Seed {seed}",
+        )
+
+    plt.axhline(
+        y=NEAREST_NEIGHBOR_FITNESS,
+        linestyle="--",
+        label="Nearest Neighbor",
+    )
+
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness")
+    plt.title("Genetic Algorithm Convergence")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    output_file = os.path.join(
+        PLOTS_DIR,
+        "ga_convergence.png",
+    )
+
+    plt.savefig(
+        output_file,
+        dpi=300,
+    )
+
+    plt.close()
+
+    print(f"Saved: {output_file}")
 
 def main():
     os.makedirs(
@@ -188,10 +269,12 @@ def main():
     )
 
     results = load_results()
+    convergence_results = load_convergence_results()
 
     plot_fitness_by_seed(results)
     plot_distance_by_seed(results)
     plot_fitness_difference(results)
+    plot_convergence(convergence_results)
 
 
 if __name__ == "__main__":
